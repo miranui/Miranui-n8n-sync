@@ -1,0 +1,260 @@
+{
+  "name": "Miranui - BoondManager - Add absences Lucas",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        360,
+        -660
+      ],
+      "id": "614bc963-fbe5-444d-b26c-7293fb8cbe11",
+      "name": "When clicking ‘Test workflow’"
+    },
+    {
+      "parameters": {
+        "fileSelector": "/files/test_payfit.csv",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        960,
+        -660
+      ],
+      "id": "e2701c6c-da6a-4a59-a964-1c4e32038933",
+      "name": "Read/Write Files from Disk"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        1240,
+        -660
+      ],
+      "id": "b398bc16-8094-44fc-a064-6ab60ca564cc",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "content": "## Algorithme\n* Pour chaque période de congés\n  * Récupérer la feuille de temps du mois correspondant à l'email\n  * Si la feuille n'existe pas, la créer\n  * Découper la période par jour de congés\n  * Pour chaque jour de congés\n    * Vérifier le jour en question est dans la feuille de temps\n    * Si ce jour est déjà saisi en congé\n      * Fin du traitement\n    * Sinon\n      * Vérifier si la feuille de temps est validée\n      * Si oui\n        * Alerter à propos de la non correspondance\n      * Sinon\n        * Ajouter le congé dans la feuille de temps",
+        "height": 380,
+        "width": 500
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1920,
+        -720
+      ],
+      "id": "147cd55b-9254-40f2-b54a-d1d6641cfca6",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "jsCode": "const jwt = require('jsonwebtoken');\n\n// Paramètres à remplacer par les valeurs réelles\nconst userToken = \"\"; // Le token utilisateur BoondManager\nconst clientToken = \"\"; // Le token du client BoondManager\nconst clientKey = \"\"; // La clé du client BoondManager\nconst mode = \"god\"; // Mode de vérification des droits, soit \"normal\", soit \"god\"\n\n// Générer l'en-tête\nconst header = {\n  alg: 'HS256',\n  typ: 'JWT',\n};\n\n// Générer le payload\nconst payload = {\n  userToken: userToken,\n  clientToken: clientToken,\n  time: Math.floor(Date.now() / 1000), // Timestamp actuel en secondes\n  mode: mode,\n};\n\n// Signer le JWT avec la clé secrète (clientKey)\nconst token = jwt.sign(payload, clientKey, { algorithm: 'HS256', header: header });\n\n// Retourner le token JWT généré\nreturn {\n  json: {\n    jwt: token\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        -660
+      ],
+      "id": "ef7135bf-456d-4f67-bea8-b0497dcca528",
+      "name": "Calculate JWT token",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "content": "## Préparation\n* Création du token JWT pour BoondManager\n* Lecture du fichiers contenant les absences à traiter",
+        "height": 240,
+        "width": 2020
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -280,
+        -720
+      ],
+      "typeVersion": 1,
+      "id": "e0cdd534-3196-44ab-bcae-3f24ad938dd6",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## Feuille de temps\n* Récupération de la feuille de temps associée à la ressource et à l'absence\n* Création de la feuille de temps si non existante",
+        "height": 280,
+        "width": 2020
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -280,
+        -440
+      ],
+      "typeVersion": 1,
+      "id": "b472a722-b2e0-468b-98f2-0ec669cd7917",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        360,
+        -380
+      ],
+      "id": "9006e196-114b-4196-8ff5-b6194e77992d",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "N8ILgRo2W4x18ogZ",
+          "mode": "list",
+          "cachedResultName": "Miranui - BoondManager - Get or create times reports"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "jwt",
+              "displayName": "jwt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        660,
+        -300
+      ],
+      "id": "938f3cd4-e9de-4bf3-94ec-fd0a2483d120",
+      "name": "Execute Workflow"
+    },
+    {
+      "parameters": {
+        "jsCode": "const result = [];\n\nfor (const item of items) {\n  const start = new Date(item.json['startDate.date']);\n  const end = new Date(item.json['endDate.date']);\n  const email = item.json['﻿email']; // attention au caractère invisible devant \"email\"\n\n  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {\n    result.push({\n      json: {\n        email,\n        date: d.toISOString().split('T')[0],\n        type: item.json.type\n      }\n    });\n  }\n}\n\nreturn result;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1480,
+        -660
+      ],
+      "id": "88bb5c16-0753-4e38-98b4-60954db46968",
+      "name": "Split period in dates"
+    }
+  ],
+  "pinData": {
+    "When clicking ‘Test workflow’": [
+      {
+        "json": {}
+      }
+    ]
+  },
+  "connections": {
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "Calculate JWT token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Split period in dates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate JWT token": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Execute Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split period in dates": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "e4f0ffa0-bedf-4531-90d7-1bf264a64d4f",
+  "meta": {
+    "instanceId": "bbb3c63331574217c16e252bda104f2851eb80e3f3fbb63788a03d86834b68d9"
+  },
+  "id": "7n2wq6ewH47UYD0v",
+  "tags": []
+}

@@ -1,0 +1,366 @@
+{
+  "name": "Leads",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "const jwt = require('jsonwebtoken');\n\n// Récupérer la sortie brute du Execute Command node\n// (adapte le nom du node si nécessaire)\nconst rawEnv = $json[\"stdout\"];\n\n// Transformer en objet { KEY: VALUE }\nconst envVars = {};\nrawEnv.split('\\n').forEach(line => {\n  if (line.trim()) {\n    const [key, value] = line.split('=');\n    envVars[key] = value;\n  }\n});\n\n// Extraire les valeurs\nconst userToken = envVars.USER_TOKEN;\nconst clientToken = envVars.CLIENT_TOKEN;\nconst clientKey = envVars.CLIENT_KEY;\nconst mode = \"god\";\n\n// Générer l'en-tête\nconst header = {\n  alg: 'HS256',\n  typ: 'JWT',\n};\n\n// Générer le payload\nconst payload = {\n  userToken,\n  clientToken,\n  time: Math.floor(Date.now() / 1000),\n  mode,\n};\n\n// Signer le JWT\nconst token = jwt.sign(payload, clientKey, { algorithm: 'HS256', header });\n\n// Retourner le résultat\nreturn {\n  json: {\n    jwt: token\n  }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        320,
+        -64
+      ],
+      "id": "f0bd2116-f391-4ec8-bbb2-255d7643445f",
+      "name": "Calculate JWT token",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "command": "env | grep \"USER_TOKEN\"\nenv | grep \"CLIENT_TOKEN\"\nenv | grep \"CLIENT_KEY\"\n"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        112,
+        -64
+      ],
+      "id": "d067377b-1900-4404-906f-e0ebe5725706",
+      "name": "Get tokens"
+    },
+    {
+      "parameters": {
+        "path": "cf806d22-8038-4160-8ab3-ecce4b783634",
+        "authentication": "basicAuth",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -176,
+        -64
+      ],
+      "id": "d18e4a04-1c9a-4ef0-b0d0-b01e7f5bb08a",
+      "name": "Webhook",
+      "webhookId": "cf806d22-8038-4160-8ab3-ecce4b783634",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "PlYfwdOyNkLRbi7v",
+          "name": "Collab credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://ui.boondmanager.com/api/opportunities?maxResults=500&opportunityStates=8,10,6,13,14,2,3,12,11,1&origins=2",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {}
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Jwt-Client-BoondManager",
+              "value": "={{ $('Calculate JWT token').item.json.jwt }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        560,
+        -64
+      ],
+      "id": "9dd65512-2e8f-479e-8cdb-ca4867d11cac",
+      "name": "GET besoins"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "57a5cece-abe5-4b6a-bb4b-98136856e5a8",
+              "leftValue": "={{ $json.data }}",
+              "rightValue": "",
+              "operator": {
+                "type": "array",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        1360,
+        -528
+      ],
+      "id": "75526d3d-854f-4b9b-bd32-89488606f8f8",
+      "name": "Filter"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1680,
+        -512
+      ],
+      "id": "5f46ba16-af7b-412b-a969-87b29596e8d0",
+      "name": "Merge"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2416,
+        -256
+      ],
+      "id": "3d2dafc7-fe60-4c20-a3a5-5d2fdf42c25e",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// n8n Function node - colle tout ceci dans le node Function\n\nconst TARGET_STATES = new Set([8, 10, 6, 13, 14, 2, 3, 12,1, 11]);\n\nconst inputs = $input.all();\nconst out = [];\n\nfor (const it of inputs) {\n  const root = (it && it.json) ? it.json : it;\n  if (!root) continue;\n\n  const meta = root.meta || null;\n  const included = root.included || null;\n  const dataArr = Array.isArray(root.data) ? root.data : [];\n\n  for (const d of dataArr) {\n    const rawState = d && d.attributes && d.attributes.state;\n    const state = rawState === undefined || rawState === null ? NaN : Number(rawState);\n    if (Number.isNaN(state)) continue;\n\n    if (TARGET_STATES.has(state)) {\n      // On reconstruit une enveloppe par opportunité correspondante\n      out.push({\n        json: {\n          meta,\n          data: d,        // <-- ici data est un objet (et donc a data.id)\n          included\n        }\n      });\n    }\n  }\n}\n\nreturn out;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        848,
+        -528
+      ],
+      "id": "add5d195-180e-4ca8-a49d-dd3a2ffc2a77",
+      "name": "Organise besoins"
+    },
+    {
+      "parameters": {
+        "url": "=https://ui.boondmanager.com/api/opportunities/{{ $json.data.id }}/actions?actionTypes=50&returnRelatedActions=true&maxResults=500\n",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Jwt-Client-BoondManager",
+              "value": "={{ $('Calculate JWT token').item.json.jwt }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1120,
+        -528
+      ],
+      "id": "520b4a09-2440-4bbd-8e57-632c46f880bc",
+      "name": "GET besoins actions",
+      "executeOnce": false
+    },
+    {
+      "parameters": {
+        "jsCode": "// n8n Function node - renvoie { PropositionCommerciale: [ { name, nombre }, ... ] }\n\n// helper: strip HTML tags and trim\nfunction stripHtml(text) {\n  if (typeof text !== 'string') return '';\n  return text.replace(/<[^>]*>/g, '').trim();\n}\n\nconst inputs = $input.all().map(i => (i && i.json) ? i.json : i);\n\n// Build a map of opportunities by id, and keep their parent meta\nconst oppMap = new Map();\nfor (const root of inputs) {\n  if (!root || !Array.isArray(root.data)) continue;\n  const parentMeta = root.meta || null;\n  for (const d of root.data) {\n    if (!d || d.type !== 'opportunity') continue;\n    oppMap.set(String(d.id), { opp: d, parentMeta });\n  }\n}\n\n// Map name -> Set of opportunityIds (pour compter des opportunités uniques par name)\nconst nameToOppIds = new Map();\n\nfor (const root of inputs) {\n  if (!root || !Array.isArray(root.data)) continue;\n  for (const d of root.data) {\n    if (!d || d.type !== 'action') continue;\n\n    const rawText = d.attributes && d.attributes.text ? d.attributes.text : '';\n    const clean = stripHtml(rawText);\n\n    // check if text *commence par* \"ACTIVE\" (case-sensitive)\n    if (!clean.startsWith('ACTIVE')) continue;\n\n    const dependsId = d.relationships && d.relationships.dependsOn && d.relationships.dependsOn.data && d.relationships.dependsOn.data.id;\n    if (!dependsId) continue;\n\n    const mapped = oppMap.get(String(dependsId));\n    if (!mapped) continue;\n\n    // origin.detail or fallback to the parent meta login\n    const originDetail = mapped.opp.attributes && mapped.opp.attributes.origin && mapped.opp.attributes.origin.detail;\n    const fallbackLogin = (mapped.parentMeta && mapped.parentMeta.login) ? mapped.parentMeta.login : null;\n    const name = originDetail || fallbackLogin;\n    if (!name) continue;\n\n    const key = String(name);\n    const oppId = String(dependsId);\n\n    if (!nameToOppIds.has(key)) {\n      nameToOppIds.set(key, new Set([oppId]));\n    } else {\n      nameToOppIds.get(key).add(oppId);\n    }\n  }\n}\n\n// Build final array of { name, nombre } sorted by nombre desc (optionnel)\nconst resultArray = Array.from(nameToOppIds.entries())\n  .map(([name, idSet]) => ({ name, nombre: idSet.size }))\n  .sort((a, b) => b.nombre - a.nombre);\n\nreturn [{ json: { PropositionCommerciale: resultArray } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1936,
+        -512
+      ],
+      "id": "d7ae18e1-e025-420a-aca9-9386c3035226",
+      "name": "Proposition commerciale count"
+    },
+    {
+      "parameters": {
+        "jsCode": "// n8n Function node - paste the whole content into the Function node\n\nfunction aggregateByState(envelopes) {\n  // États à inclure dans GoMiranui\n  const goMiranuiStates = new Set([\n    8,  // Go Manae\n    10, // Soutenance effectuée\n    6,  // Négociation commerciale\n    13, // Propal envoyé\n    14, // Go externe\n    2,  // Perdu\n    3,  // Abandonné (par le client)\n    12, // Abandonné par miranui\n    11, // Mail d’intention d’achat (à la fois GoMiranui et Signature)\n    1   // Gagné (à la fois GoMiranui et Signature)\n  ]);\n\n  // États à inclure dans Signature (en plus d'être dans GoMiranui)\n  const signatureStates = new Set([11, 1]);\n\n  // Counters : Map par catégorie -> Map(name -> count)\n  const counters = {\n    GoMiranui: new Map(),\n    Signature: new Map(),\n  };\n\n  for (const envelope of envelopes) {\n    const topLogin = envelope.meta && envelope.meta.login ? envelope.meta.login : null;\n\n    if (!Array.isArray(envelope.data)) continue;\n\n    for (const item of envelope.data) {\n      const rawState = item && item.attributes && item.attributes.state;\n      const state = Number(rawState);\n      if (Number.isNaN(state)) continue;\n\n      const originDetail = item.attributes && item.attributes.origin && item.attributes.origin.detail;\n      const name = originDetail || topLogin;\n      if (!name) continue;\n\n      // Si l'état fait partie de GoMiranui -> incrémente GoMiranui\n      if (goMiranuiStates.has(state)) {\n        const map = counters.GoMiranui;\n        map.set(name, (map.get(name) || 0) + 1);\n      }\n\n      // Si l'état fait partie de Signature -> incrémente Signature\n      // (Note : 11 et 1 sont aussi dans goMiranuiStates, donc seront comptés dans les deux)\n      if (signatureStates.has(state)) {\n        const map = counters.Signature;\n        map.set(name, (map.get(name) || 0) + 1);\n      }\n    }\n  }\n\n  // Prépare le résultat trié pour chaque catégorie\n  const result = {};\n  for (const category of Object.keys(counters)) {\n    const arr = Array.from(counters[category].entries())\n      .map(([name, count]) => ({ name, nombre: count }))\n      .sort((a, b) => b.nombre - a.nombre);\n    result[category] = arr;\n  }\n\n  return result;\n}\n\n// --- n8n wrapper: $input.all() returns items like [{ json: {...} }, ...]\nconst rawInput = $input.all();\n\n// normalize: extract .json if present, otherwise use item directly\nconst envelopes = rawInput.map(it => (it && it.json) ? it.json : it);\n\n// run aggregation\nconst output = aggregateByState(envelopes);\n\n// n8n expects an array of items; each item can have a `json` property\nreturn [{ json: output }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1936,
+        -48
+      ],
+      "id": "2734dcc3-fa45-46a3-8e87-716cf0484684",
+      "name": "Go Miranui & Signature Count"
+    },
+    {
+      "parameters": {
+        "jsCode": "// n8n Function node — fusionne et agrège les buckets depuis $input.all()\n\n// Récupère les items d'entrée (format n8n)\nconst inputs = $input.all().map(i => (i && i.json) ? i.json : i);\n\n// Maps pour agréger : bucket -> Map(name -> nombre)\nconst merged = new Map();\n// Permet de garder l'ordre d'apparition des buckets\nconst bucketOrder = [];\n\nfor (const obj of inputs) {\n  if (!obj || typeof obj !== 'object') continue;\n\n  for (const [bucket, arr] of Object.entries(obj)) {\n    if (!Array.isArray(arr)) continue;\n\n    if (!merged.has(bucket)) {\n      merged.set(bucket, new Map());\n      bucketOrder.push(bucket);\n    }\n    const map = merged.get(bucket);\n\n    for (const entry of arr) {\n      if (!entry || typeof entry.name === 'undefined') continue;\n      const name = String(entry.name);\n      const count = Number(entry.nombre) || 0;\n      map.set(name, (map.get(name) || 0) + count);\n    }\n  }\n}\n\n// Reconstruire l'objet final avec les buckets dans l'ordre d'apparition\nconst resultObj = {};\nfor (const bucket of bucketOrder) {\n  const map = merged.get(bucket);\n  resultObj[bucket] = Array.from(map.entries()).map(([name, nombre]) => ({ name, nombre }));\n}\n\n// Retour n8n : un item qui contient l'objet final\nreturn [{ json: resultObj }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2640,
+        -256
+      ],
+      "id": "7dfa5395-8649-497b-9ddb-3439aae54f28",
+      "name": "Leads final"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Calculate JWT token": {
+      "main": [
+        [
+          {
+            "node": "GET besoins",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get tokens": {
+      "main": [
+        [
+          {
+            "node": "Calculate JWT token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Get tokens",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET besoins": {
+      "main": [
+        [
+          {
+            "node": "Go Miranui & Signature Count",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Organise besoins",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Proposition commerciale count",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Leads final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Organise besoins": {
+      "main": [
+        [
+          {
+            "node": "GET besoins actions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET besoins actions": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Proposition commerciale count": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Go Miranui & Signature Count": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Leads final": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "30ef2044-9d46-4210-b861-69f8e03a58f4",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1c7cd5329ba0f9c84a52f1a560eaf026638d92ca0190407f86d1b4e8f5e948c2"
+  },
+  "id": "ZHrjOKymolH50yfZ",
+  "tags": []
+}

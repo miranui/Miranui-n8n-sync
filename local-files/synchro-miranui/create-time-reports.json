@@ -1,0 +1,451 @@
+{
+  "name": "boond create time report",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "const jwt = require('jsonwebtoken');\n\n// Récupérer la sortie brute du Execute Command node\n// (adapte le nom du node si nécessaire)\nconst rawEnv = $json[\"stdout\"];\n\n// Transformer en objet { KEY: VALUE }\nconst envVars = {};\nrawEnv.split('\\n').forEach(line => {\n  if (line.trim()) {\n    const [key, value] = line.split('=');\n    envVars[key] = value;\n  }\n});\n\n// Extraire les valeurs\nconst userToken = envVars.USER_TOKEN;\nconst clientToken = envVars.CLIENT_TOKEN;\nconst clientKey = envVars.CLIENT_KEY;\nconst mode = \"god\";\n\n// Générer l'en-tête\nconst header = {\n  alg: 'HS256',\n  typ: 'JWT',\n};\n\n// Générer le payload\nconst payload = {\n  userToken,\n  clientToken,\n  time: Math.floor(Date.now() / 1000),\n  mode,\n};\n\n// Signer le JWT\nconst token = jwt.sign(payload, clientKey, { algorithm: 'HS256', header });\n\n// Retourner le résultat\nreturn {\n  json: {\n    jwt: token\n  }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        512
+      ],
+      "id": "a42e123d-f4b4-4bf4-86be-9c37c43f8f51",
+      "name": "Calculate JWT token",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "url": "https://ui.boondmanager.com/api/resources",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "keywordsType",
+              "value": "emails"
+            },
+            {
+              "name": "keywords",
+              "value": "={{ $('When Executed by Another Workflow').item.json.email }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Jwt-Client-BoondManager",
+              "value": "={{ $('When Executed by Another Workflow').item.json.jwt || $('Calculate JWT token').item.json.jwt }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        368,
+        256
+      ],
+      "id": "7af59450-fcaa-42fa-81bf-2e0e4adaed55",
+      "name": "GET Resource"
+    },
+    {
+      "parameters": {
+        "url": "https://ui.boondmanager.com/api/times-reports",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "startMonth",
+              "value": "={{ $('When Executed by Another Workflow').item.json.month }}"
+            },
+            {
+              "name": "endMonth",
+              "value": "={{ $('When Executed by Another Workflow').item.json.month }}"
+            },
+            {
+              "name": "keywords",
+              "value": "={{ $('When Executed by Another Workflow').item.json.email }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Jwt-Client-BoondManager",
+              "value": "={{ $('When Executed by Another Workflow').item.json.jwt || $('Calculate JWT token').item.json.jwt }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        640,
+        256
+      ],
+      "id": "e264a010-5f09-4d44-90d3-fab9238a42ea",
+      "name": "GET Times Reports"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "0a126a07-ced4-4c7e-a10e-4cf589839d96",
+              "leftValue": "={{ $json.data }}",
+              "rightValue": "",
+              "operator": {
+                "type": "array",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        928,
+        256
+      ],
+      "id": "50ca65a9-a8cc-481d-b687-29f0069c57cb",
+      "name": "If no times report found"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://ui.boondmanager.com/api/times-reports",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Jwt-Client-BoondManager",
+              "value": "={{ $('Calculate JWT token').first().json.jwt }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"data\": {\n    \"type\": \"timesreport\",\n    \"attributes\": {\n      \"term\": \"{{ $('When Executed by Another Workflow').item.json.month }}\",\n      \"workUnitRate\": 1\n    },\n    \"relationships\": {\n      \"agency\": {\n        \"data\": {\n          \"type\": \"agency\",\n          \"id\": \"{{ $('GET Resource').item.json.data[0].id }}\"\n        }\n      },\n      \"resource\": {\n        \"data\": {\n          \"type\": \"resource\",\n          \"id\": \"{{ $('GET Resource').item.json.data[0].id }}\"\n        }\n      }\n    }\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        0
+      ],
+      "id": "ff84c3b3-106f-479d-8159-b6914053e4ab",
+      "name": "POST Times Reports"
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "jwt"
+            },
+            {
+              "name": "email"
+            },
+            {
+              "name": "month"
+            },
+            {
+              "name": "dates",
+              "type": "array"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -656,
+        256
+      ],
+      "id": "00d79d3e-c68f-4691-8fb9-72ff87796701",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "76428274-33d0-4318-8c2f-456712bd964f",
+              "leftValue": "={{ $json.jwt }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -144,
+        256
+      ],
+      "id": "c2ac46bf-ad40-428b-b9a5-f07f560b497f",
+      "name": "If token JWT is present"
+    },
+    {
+      "parameters": {
+        "command": "env | grep \"USER_TOKEN\"\nenv | grep \"CLIENT_TOKEN\"\nenv | grep \"CLIENT_KEY\"\n"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        32,
+        512
+      ],
+      "id": "798d132f-447e-4de5-ba8b-9b74fbd23668",
+      "name": "Execute Command"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Function Item (n8n) — $json contient l'objet d'entrée\n\nfunction toDate(d) {\n  const [y, m, day] = String(d).split('-').map(Number);\n  return new Date(y, m - 1, day);\n}\nfunction addDays(d, n) {\n  const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());\n  x.setDate(x.getDate() + n);\n  return x;\n}\nfunction toISODate(d) {\n  const y = d.getFullYear();\n  const m = String(d.getMonth() + 1).padStart(2, '0');\n  const day = String(d.getDate()).padStart(2, '0');\n  return `${y}-${m}-${day}`;\n}\n\nconst TYPE_MAP = {\n  fr_rtt: { name: 'RTT', reference: 3, activityType: 'absence', resourcesTypes: null },\n  fr_conges_payes:  { name: 'CP',  reference: 2,  activityType: 'absence', resourcesTypes: null },\n  fr_sans_solde: { name: 'Congés Sans Solde',  reference: 4,  activityType: 'absence', resourcesTypes: null },\n  fr_maladie_ordinaire: { name: 'Maladie', reference: 5, activityType: 'absence', resourcesTypes: null },\n  fr_exc: { name: 'Exceptionnelle', reference: 6, activityType: 'absence', resourcesTypes: null },\n};\n\nfunction workUnitType(t) {\n  const k = String(t || '').toLowerCase();\n  // Si c'est l'une des 4 premières clés, on renvoie le type exact\n  if (['fr_rtt','fr_conges_payes','fr_sans_solde','fr_maladie_ordinaire'].includes(k)) {\n    return TYPE_MAP[k];\n  }\n  // Sinon on considère que c'est \"fr_exc\"\n  return TYPE_MAP.fr_exc;\n}\n\nfunction expandRange(range) {\n  const sDate = toDate(range['startDate.date']);\n  const eDate = toDate(range['endDate.date']);\n  let start = range['startDate.moment'] === 'end-of-day' ? addDays(sDate, 1) : sDate;\n  let end   = range['endDate.moment']   === 'beginning-of-day' ? addDays(eDate, -1) : eDate;\n  if (end < start) return [];\n  const days = [];\n  for (let d = start; d <= end; d = addDays(d, 1)) days.push(toISODate(d));\n  return days;\n}\n\nconst input = $json || {};\nconst ranges = Array.isArray(input.dates) ? input.dates : [];\nconst regularTimes = [];\n\nlet rowNb = 0\n\nfor (const r of ranges) {\n  rowNb = rowNb - 1\n  const days = expandRange(r);\n  const wut = workUnitType(r.type);\n  for (const day of days) {\n    regularTimes.push({\n      batch: null,\n      delivery: null,\n      duration: 1,\n      project: null,\n      row: rowNb,\n      startDate: day,\n      workUnitType: wut,\n    });\n  }\n}\n\nreturn {\n  data: {\n    attributes: { regularTimes },\n    type: 'timesreport'\n  }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -368,
+        256
+      ],
+      "id": "8cb29f5e-f76b-4bbe-8c35-c0facc633c15",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://ui.boondmanager.com/api/timesreports/{{ $json.data[0].id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Jwt-Client-BoondManager",
+              "value": "={{ $('When Executed by Another Workflow').item.json.jwt || $('Calculate JWT token').item.json.jwt }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $node['Code in JavaScript'].data.toJsonString() }}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1904,
+        272
+      ],
+      "id": "3756fc0b-7cd1-49c2-98f3-fb209f2aff84",
+      "name": "Update Absences"
+    }
+  ],
+  "pinData": {
+    "When Executed by Another Workflow": [
+      {
+        "json": {
+          "email": "lucas.atabey@miranui.fr",
+          "month": "2025-09",
+          "dates": [
+            {
+              "startDate.date": "2025-09-08",
+              "startDate.moment": "beginning-of-day",
+              "endDate.date": "2025-09-08",
+              "endDate.moment": "end-of-day",
+              "type": "fr_rtt"
+            },
+            {
+              "startDate.date": "2025-09-09",
+              "startDate.moment": "beginning-of-day",
+              "endDate.date": "2025-09-09",
+              "endDate.moment": "end-of-day",
+              "type": "fr_conges_payes"
+            },
+            {
+              "startDate.date": "2025-09-10",
+              "startDate.moment": "beginning-of-day",
+              "endDate.date": "2025-09-10",
+              "endDate.moment": "end-of-day",
+              "type": "fr_sans_solde"
+            },
+            {
+              "startDate.date": "2025-09-11",
+              "startDate.moment": "beginning-of-day",
+              "endDate.date": "2025-09-11",
+              "endDate.moment": "end-of-day",
+              "type": "fr_maladie_ordinaire"
+            },
+            {
+              "startDate.date": "2025-09-12",
+              "startDate.moment": "beginning-of-day",
+              "endDate.date": "2025-09-12",
+              "endDate.moment": "end-of-day",
+              "type": "truc_bidule"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Calculate JWT token": {
+      "main": [
+        [
+          {
+            "node": "GET Resource",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET Resource": {
+      "main": [
+        [
+          {
+            "node": "GET Times Reports",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET Times Reports": {
+      "main": [
+        [
+          {
+            "node": "If no times report found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If no times report found": {
+      "main": [
+        [
+          {
+            "node": "POST Times Reports",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update Absences",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If token JWT is present": {
+      "main": [
+        [
+          {
+            "node": "GET Resource",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Execute Command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Command": {
+      "main": [
+        [
+          {
+            "node": "Calculate JWT token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST Times Reports": {
+      "main": [
+        [
+          {
+            "node": "Update Absences",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "If token JWT is present",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "324bb0f1-b180-4949-ad18-49ec491dff00",
+  "meta": {
+    "instanceId": "1c7cd5329ba0f9c84a52f1a560eaf026638d92ca0190407f86d1b4e8f5e948c2"
+  },
+  "id": "MjatFDBLLrpR3cNV",
+  "tags": [
+    {
+      "createdAt": "2025-09-03T13:52:34.163Z",
+      "updatedAt": "2025-09-03T13:52:34.163Z",
+      "id": "0q59noUy71jM8V9y",
+      "name": "Sub-workflow"
+    }
+  ]
+}

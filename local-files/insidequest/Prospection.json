@@ -1,0 +1,438 @@
+{
+  "name": "Prospection",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "const jwt = require('jsonwebtoken');\n\n// Récupérer la sortie brute du Execute Command node\n// (adapte le nom du node si nécessaire)\nconst rawEnv = $json[\"stdout\"];\n\n// Transformer en objet { KEY: VALUE }\nconst envVars = {};\nrawEnv.split('\\n').forEach(line => {\n  if (line.trim()) {\n    const [key, value] = line.split('=');\n    envVars[key] = value;\n  }\n});\n\n// Extraire les valeurs\nconst userToken = envVars.USER_TOKEN;\nconst clientToken = envVars.CLIENT_TOKEN;\nconst clientKey = envVars.CLIENT_KEY;\nconst mode = \"god\";\n\n// Générer l'en-tête\nconst header = {\n  alg: 'HS256',\n  typ: 'JWT',\n};\n\n// Générer le payload\nconst payload = {\n  userToken,\n  clientToken,\n  time: Math.floor(Date.now() / 1000),\n  mode,\n};\n\n// Signer le JWT\nconst token = jwt.sign(payload, clientKey, { algorithm: 'HS256', header });\n\n// Retourner le résultat\nreturn {\n  json: {\n    jwt: token\n  }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        320,
+        -64
+      ],
+      "id": "396855d3-bb49-417a-a3a3-2ce312f10e21",
+      "name": "Calculate JWT token",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        832,
+        -64
+      ],
+      "id": "b4036fb0-e5b1-4b21-88d8-2f921e3a249a",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "=data.attributes.origin.detail",
+        "include": "selectedOtherFields",
+        "fieldsToInclude": "=data.attributes.firstName, data.attributes.lastName",
+        "options": {
+          "disableDotNotation": "={{ false }}",
+          "destinationFieldName": "name",
+          "includeBinary": false
+        }
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        1568,
+        176
+      ],
+      "id": "6a10d534-1e9a-4558-909e-8646427d7855",
+      "name": "Split Out1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "7a4d349c-8ee9-4e37-944b-074275bfa147",
+              "leftValue": "={{ $json.data.attributes.phone2 }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "eeb1d287-ea60-4e4e-a0f9-7809ab864b29",
+              "leftValue": "={{ $json.data.attributes.phone1 }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        1344,
+        -64
+      ],
+      "id": "420f1a2c-9859-43c8-96fd-03f073377372",
+      "name": "Filter"
+    },
+    {
+      "parameters": {
+        "path": "e0a47c03-7c91-4206-81e7-8a09c8f03daa",
+        "authentication": "basicAuth",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -208,
+        -64
+      ],
+      "id": "504329b1-38c2-41a0-bd02-bf80b069cab6",
+      "name": "Webhook",
+      "webhookId": "e0a47c03-7c91-4206-81e7-8a09c8f03daa",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "PlYfwdOyNkLRbi7v",
+          "name": "Collab credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "command": "env | grep \"USER_TOKEN\"\nenv | grep \"CLIENT_TOKEN\"\nenv | grep \"CLIENT_KEY\"\n"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        64,
+        -64
+      ],
+      "id": "0c2c8ffd-404e-4ee3-a319-2bd7d203df64",
+      "name": "Get tokens"
+    },
+    {
+      "parameters": {
+        "url": "=https://ui.boondmanager.com/api/contacts?startDate=2025-09-01&origins=2&maxResults=500",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {}
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Jwt-Client-BoondManager",
+              "value": "={{ $('Calculate JWT token').item.json.jwt }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        560,
+        -64
+      ],
+      "id": "0446524e-1b20-49e8-8d35-f9437148cc04",
+      "name": "GET contacts"
+    },
+    {
+      "parameters": {
+        "url": "=https://ui.boondmanager.com/api/contacts/{{ $json.id }}/information",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Jwt-Client-BoondManager",
+              "value": "={{ $('Calculate JWT token').item.json.jwt }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1072,
+        -64
+      ],
+      "id": "3837f9e2-bd3d-4bbd-8b58-b4581025a0b0",
+      "name": "GET contacts informations",
+      "executeOnce": false
+    },
+    {
+      "parameters": {
+        "jsCode": "// Function node - agrège les contacts par email et renvoie { Contacts: [{name, nombre}, ...] }\n\n// Compte les occurrences par email\nconst counts = {};\n\nfor (const item of items) {\n  // récupérer l'email depuis plusieurs emplacements possibles (adaptable)\n  const email =\n    (item.json && item.json.name) ||\n    (item.json && item.json.data && item.json.data.attributes && item.json.data.attributes.origin && item.json.data.attributes.origin.detail) ||\n    (item.json && item.json.email) ||\n    '';\n\n  const trimmed = String(email || '').trim().toLowerCase();\n  if (!trimmed) continue;\n\n  counts[trimmed] = (counts[trimmed] || 0) + 1;\n}\n\n// Transformer en tableau\nconst Contacts = Object.entries(counts).map(([name, nombre]) => ({ name, nombre }))\n  .sort((a, b) => a.name.localeCompare(b.name));\n\n// Retour n8n\nreturn [\n  {\n    json: {\n      Contacts\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2192,
+        176
+      ],
+      "id": "e258d1cd-7689-4100-bcbf-8684d86fd1eb",
+      "name": "Count relever contacts"
+    },
+    {
+      "parameters": {
+        "url": "=https://ui.boondmanager.com/api/contacts/{{ $json.data.id }}/actions?actionTypes=60&returnRelatedActions=true&maxResults=500\n",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Jwt-Client-BoondManager",
+              "value": "={{ $('Calculate JWT token').item.json.jwt }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1616,
+        -496
+      ],
+      "id": "ebffb277-7134-4185-87a4-3c531f2364e7",
+      "name": "GET contacts actions",
+      "executeOnce": false
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1920,
+        -480
+      ],
+      "id": "e3027330-922e-4480-8de3-5eea64765fae",
+      "name": "Merge"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2720,
+        -144
+      ],
+      "id": "1c168c4a-3fa6-4435-b87e-5380db7af364",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Function node (Execute Once)\n\n// Réutilisation des variables actions et contacts si déjà dans le scope\nlet actionsLocal = typeof actions !== 'undefined' ? actions : null;\nlet contactsLocal = typeof contacts !== 'undefined' ? contacts : null;\n\nif (!actionsLocal || !contactsLocal) {\n  const allInputs = $input.all();\n  actionsLocal = [];\n  contactsLocal = [];\n\n  for (const item of allInputs) {\n    const data = item.json?.data;\n    if (Array.isArray(data)) {\n      for (const d of data) {\n        if (!d) continue;\n        if (d.type === 'action') {\n          actionsLocal.push({\n            pitchText: d.attributes?.text ?? '',\n            contactId: d.relationships?.dependsOn?.data?.id ?? null\n          });\n        } else if (d.type === 'contact') {\n          contactsLocal.push(d);\n        }\n      }\n    } else if (data && typeof data === 'object') {\n      const d = data;\n      if (d.type === 'action') {\n        actionsLocal.push({\n          pitchText: d.attributes?.text ?? '',\n          contactId: d.relationships?.dependsOn?.data?.id ?? null\n        });\n      } else if (d.type === 'contact') {\n        contactsLocal.push(d);\n      }\n    }\n  }\n}\n\n// Helper : enlever balises HTML\nfunction stripHtml(html) {\n  if (!html) return '';\n  return html.replace(/<[^>]*>/g, ' ').replace(/\\s+/g, ' ').trim();\n}\n\n// Construire map id -> contact complet (pour email)\nconst contactMap = {};\nfor (const c of contactsLocal) {\n  if (!c || c.id === undefined) continue;\n  contactMap[String(c.id)] = c;\n}\n\n// Comptages\nconst totalByEmail = {};\nconst organiseByEmail = {};\n\n// Parcours des actions\nfor (const a of actionsLocal) {\n  if (!a) continue;\n\n  const contactId = a.contactId ?? null;\n  if (!contactId) continue;\n  const contact = contactMap[String(contactId)];\n  if (!contact) continue;\n\n  // Récupère l'email (champ utilisé précédemment)\n  const email = (contact.attributes?.origin?.detail ?? '').toString().trim();\n  if (!email) continue;\n\n  // Nettoyage texte et détection AUTONOME\n  const text = stripHtml(String(a.pitchText ?? ''));\n  const isAutonome = /\\bAUTONOME\\b/i.test(text);\n\n  // Comptes\n  totalByEmail[email] = (totalByEmail[email] || 0) + 1;\n  if (isAutonome) {\n    organiseByEmail[email] = (organiseByEmail[email] || 0) + 1;\n  }\n}\n\n// Transformer en tableaux triés (optionnel : tri alphabétique)\nconst Pitchs = Object.entries(totalByEmail)\n  .map(([name, nombre]) => ({ name, nombre }))\n  .sort((a,b) => a.name.localeCompare(b.name));\n\nconst PitchsOrganises = Object.entries(organiseByEmail)\n  .map(([name, nombre]) => ({ name, nombre }))\n  .sort((a,b) => a.name.localeCompare(b.name));\n\n// Retour n8n : structure demandée\nreturn [\n  {\n    json: {\n      Prospection: {\n        Pitchs,\n        PitchsOrganises\n      }\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2208,
+        -480
+      ],
+      "id": "cfd071d2-30d9-4b86-a0c3-9cc57c2e88cf",
+      "name": "Count Pitch de découverte"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Function node - fusionne Contacts dans Prospection\n\n// Récupère toutes les sous-structures présentes dans items\nconst allPros = [];\nconst allContacts = [];\n\nfor (const it of items) {\n  const j = it.json || {};\n  if (j.Prospection && typeof j.Prospection === 'object') {\n    // si plusieurs Prospection, on concatène leurs tableaux internes si présents\n    const p = j.Prospection;\n    if (Array.isArray(p.Pitchs)) allPros.push(...p.Pitchs);\n    if (Array.isArray(p.PitchsOrganises)) allPros.push({ __organises: true, data: p.PitchsOrganises });\n    // on garde aussi l'objet entier au cas où (non nécessaire ici)\n  }\n  if (Array.isArray(j.Contacts)) {\n    allContacts.push(...j.Contacts);\n  }\n}\n\n// Reconstruire Pitchs et PitchsOrganises proprement\n// On a poussé les Pitchs directement et les PitchsOrganises encapsulés si présents\nconst Pitchs = [];\nconst PitchsOrganises = [];\n\nfor (const entry of allPros) {\n  if (entry && entry.__organises) {\n    // entry.data est un array\n    for (const e of entry.data) {\n      PitchsOrganises.push(e);\n    }\n  } else if (entry) {\n    Pitchs.push(entry);\n  }\n}\n\n// Si aucun Prospection trouvé, on peut initialiser vide\n// Contacts : tout ce qu'on a collecté\nconst Contacts = allContacts;\n\n// Retourne un seul item avec Prospection contenant Pitchs, PitchsOrganises et Contacts\nreturn [\n  {\n    json: {\n      Prospection: {\n        Contacts,\n        Pitchs,\n        PitchsOrganises\n      }\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2960,
+        -144
+      ],
+      "id": "56268bd1-30d4-489a-a677-2ff5b7ae617c",
+      "name": "Prospection final result"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Calculate JWT token": {
+      "main": [
+        [
+          {
+            "node": "GET contacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "GET contacts informations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out1": {
+      "main": [
+        [
+          {
+            "node": "Count relever contacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "Split Out1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "GET contacts actions",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Get tokens",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get tokens": {
+      "main": [
+        [
+          {
+            "node": "Calculate JWT token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET contacts": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET contacts informations": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET contacts actions": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Count Pitch de découverte",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Count relever contacts": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Count Pitch de découverte": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Prospection final result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "ab71cf07-1824-47ab-82df-0a641fc9dc15",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1c7cd5329ba0f9c84a52f1a560eaf026638d92ca0190407f86d1b4e8f5e948c2"
+  },
+  "id": "bYtpQ6g33oWA5ouT",
+  "tags": []
+}
