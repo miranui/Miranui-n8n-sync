@@ -7,7 +7,7 @@ terraform {
   }
   backend "s3" {
     bucket                      = "lucas-backends-terraform"
-    key                         = "miranuiN8nSync/state/terraform.tfstate"
+    key                         = "miranuiN8nSync/state/env/terraform.tfstate" # this is a place holder
     region                      = "sbg" # Random us region not used for ovh backend
     endpoints                   = { s3 = "https://s3.sbg.io.cloud.ovh.net" }
     skip_credentials_validation = true

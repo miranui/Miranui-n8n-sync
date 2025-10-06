@@ -55,3 +55,8 @@ variable "client_token" {
   type        = string
   sensitive   = true
 }
+
+variable "env" {
+  description = "prod or dev"
+  type        = string
+}
