@@ -3,12 +3,12 @@
   "nodes": [
     {
       "parameters": {
-        "jsCode": "const jwt = require('jsonwebtoken');\n\n// Récupérer la sortie brute du Execute Command node\n// (adapte le nom du node si nécessaire)\nconst rawEnv = $json[\"stdout\"];\n\n// Transformer en objet { KEY: VALUE }\nconst envVars = {};\nrawEnv.split('\\n').forEach(line => {\n  if (line.trim()) {\n    const [key, value] = line.split('=');\n    envVars[key] = value;\n  }\n});\n\n// Extraire les valeurs\nconst userToken = envVars.USER_TOKEN;\nconst clientToken = envVars.CLIENT_TOKEN;\nconst clientKey = envVars.CLIENT_KEY;\nconst mode = \"god\";\n\n// Générer l'en-tête\nconst header = {\n  alg: 'HS256',\n  typ: 'JWT',\n};\n\n// Générer le payload\nconst payload = {\n  userToken,\n  clientToken,\n  time: Math.floor(Date.now() / 1000),\n  mode,\n};\n\n// Signer le JWT\nconst token = jwt.sign(payload, clientKey, { algorithm: 'HS256', header });\n\n// Retourner le résultat\nreturn {\n  json: {\n    jwt: token\n  }\n};\n"
+        "jsCode": "const jwt = require('jsonwebtoken');\n\n// Récupérer la sortie brute du Execute Command node\n// (adapte le nom du node si nécessaire)\nconst rawEnv = $json[\"stdout\"];\n\n// Transformer en objet { KEY: VALUE }\nconst envVars = {};\nrawEnv.split('\\n').forEach(line => {\n  if (line.trim()) {\n    const [key, value] = line.split('=');\n    envVars[key] = value;\n  }\n});\n\n// Extraire les valeurs\nconst userToken = envVars.USER_TOKEN;\nconst clientToken = envVars.CLIENT_TOKEN;\nconst clientKey = envVars.CLIENT_KEY;\nconst n8n_key = envVars.N8N_KEY;\nconst n8n_secret = envVars.N8N_TOKEN;\n\nconst key = $('Webhook').first().json.headers[\"x-webhook-key\"] || '';\nconst secret = $('Webhook').first().json.headers[\"x-webhook-secret\"] || '';\n\nif (key !== n8n_key || secret !== n8n_secret) {\n  throw new Error('Unauthorized webhook: bad secrets');\n}\n\nconst mode = \"god\";\n\n// Générer l'en-tête\nconst header = {\n  alg: 'HS256',\n  typ: 'JWT',\n};\n\n// Générer le payload\nconst payload = {\n  userToken,\n  clientToken,\n  time: Math.floor(Date.now() / 1000),\n  mode,\n};\n\n// Signer le JWT\nconst token = jwt.sign(payload, clientKey, { algorithm: 'HS256', header });\n\n// Retourner le résultat\nreturn {\n  json: {\n    jwt: token\n  }\n};\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        320,
+        112,
         -64
       ],
       "id": "396855d3-bb49-417a-a3a3-2ce312f10e21",
@@ -95,35 +95,30 @@
     },
     {
       "parameters": {
+        "httpMethod": "GET",
         "path": "e0a47c03-7c91-4206-81e7-8a09c8f03daa",
-        "authentication": "basicAuth",
         "responseMode": "lastNode",
+        "responseData": "allEntries",
         "options": {}
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -208,
+        -448,
         -64
       ],
       "id": "504329b1-38c2-41a0-bd02-bf80b069cab6",
       "name": "Webhook",
-      "webhookId": "e0a47c03-7c91-4206-81e7-8a09c8f03daa",
-      "credentials": {
-        "httpBasicAuth": {
-          "id": "PlYfwdOyNkLRbi7v",
-          "name": "Collab credential"
-        }
-      }
+      "webhookId": "e0a47c03-7c91-4206-81e7-8a09c8f03daa"
     },
     {
       "parameters": {
-        "command": "env | grep \"USER_TOKEN\"\nenv | grep \"CLIENT_TOKEN\"\nenv | grep \"CLIENT_KEY\"\n"
+        "command": "env | grep \"USER_TOKEN\"\nenv | grep \"CLIENT_TOKEN\"\nenv | grep \"CLIENT_KEY\"\nenv | grep \"N8N_KEY\"\nenv | grep \"N8N_TOKEN\"\n"
       },
       "type": "n8n-nodes-base.executeCommand",
       "typeVersion": 1,
       "position": [
-        64,
+        -144,
         -64
       ],
       "id": "0c2c8ffd-404e-4ee3-a319-2bd7d203df64",
@@ -424,11 +419,11 @@
       ]
     }
   },
-  "active": false,
+  "active": true,
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "ab71cf07-1824-47ab-82df-0a641fc9dc15",
+  "versionId": "4c05312f-adb1-4df3-9203-597756d06966",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "1c7cd5329ba0f9c84a52f1a560eaf026638d92ca0190407f86d1b4e8f5e948c2"

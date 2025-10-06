@@ -31,6 +31,7 @@ services:
       - OWNER_EMAIL=${OWNER_EMAIL}
       - OWNER_PASSWORD=${OWNER_PASSWORD}
       - N8N_DOMAIN_NAME=${N8N_DOMAIN_NAME}
+      - N8N_TRUST_PROXY=true
     volumes:
       - n8n_data:/home/node/.n8n
       - ./local-files:/files

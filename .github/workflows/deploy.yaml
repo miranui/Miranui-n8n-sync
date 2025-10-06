@@ -1,41 +1,17 @@
 name: Docker Image CI
 
 on:
-  # trigger for PRs targeting main
   pull_request:
     branches: ["main"]
     types: [opened, reopened, synchronize, ready_for_review]
-
-  # trigger on direct pushes to main (including merges)
   push:
     branches: ["main"]
-
-env:
-  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  TF_VAR_token: ${{ secrets.TOKEN }}
-  TF_VAR_secret: ${{ secrets.SECRET }}
-  TF_VAR_endpoint: "https://api.clever-cloud.com"
-  TF_VAR_organisation: ${{ secrets.ORGANISATION }}
-  TF_VAR_secret_key: ${{ secrets.APPLICATION_SECRET_KEY }}
-  TF_VAR_admin_password: ${{ secrets.ADMIN_PASSWORD }}
-  TF_VAR_admin_user: ${{ secrets.ADMIN_USER }}
-  TF_VAR_env: ${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
 
-    # If the event is a pull_request, only run the job when the PR source branch is "dev".
-    # If the event is a push, github.event_name == 'push' so the condition evaluates true.
-    if: |
-      ${{ github.event_name == 'push' }} ||
-      ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'dev' }}
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
       - name: Show context
         run: |
           echo "Event: $GITHUB_EVENT_NAME"
@@ -48,74 +24,176 @@ jobs:
   ##############################################################################
   #                          terraform PLAN                                    #
   ##############################################################################
-  # terraform-plan:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout repository
-  #       uses: actions/checkout@v4
+  terraform-plan:
+    runs-on: ubuntu-latest
+    needs: [build-and-test]
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-  #     - name: Set up Terraform
-  #       uses: hashicorp/setup-terraform@v3
-  #       with:
-  #         terraform_version: 1.6.6
+      TF_VAR_token: ${{ secrets.CLEVER_TOKEN }}
+      TF_VAR_secret: ${{ secrets.CLEVER_SECRET }}
+      TF_VAR_endpoint: ${{ secrets.CLEVER_ENDPOINT }}
+      TF_VAR_organisation: ${{ secrets.CLEVER_ORGANISATION }}
 
-  #     - name: Terraform Init apply
-  #       run: |
-  #         terraform init
-  #       working-directory: terraform/
+      TF_VAR_n8n_owner_email: ${{ secrets.N8N_OWNER_EMAIL }}
+      TF_VAR_n8n_owner_password: ${{ secrets.N8N_OWNER_PASSWORD }}
+      TF_VAR_n8n_encryption_key: ${{ secrets.N8N_ENCRYPTION_KEY }}
 
-  #     - name: Terraform Format Check
-  #       run: terraform fmt -check
-  #       working-directory: terraform/
+      TF_VAR_user_token: ${{ secrets.BOOND_USER_TOKEN }}
+      TF_VAR_client_token: ${{ secrets.BOUND_CLIENT_TOKEN }}
+      TF_VAR_client_key: ${{ secrets.BOOND_CLIENT_KEY }}
 
-  #     - name: Terraform Validate
-  #       run: terraform validate
-  #       working-directory: terraform/
+      TF_VAR_miranui_key: ${{ secrets.MIRANUI_API_KEY }}
+      TF_VAR_miranui_token: ${{ secrets.MIRANUI_API_TOKEN }}
 
-  #     - name: Terraform Plan
-  #       run: terraform plan
-  #       working-directory: terraform/
+      TF_VAR_env_name: ${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}
+      ENV_NAME: ${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}
 
-  # ##############################################################################
-  # #                          terraform APPLY                                   #
-  # ##############################################################################
-  # terraform-apply:
-  #   runs-on: ubuntu-latest
-  #   environment: terraform_holder
-  #   needs: [terraform-plan]
-  #   steps:
-  #     - uses: actions/checkout@v4
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-  #     - uses: hashicorp/setup-terraform@v3
-  #       with:
-  #         terraform_version: 1.6.6
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.6
 
-  #     - name: Terraform Init apply
-  #       run: |
-  #         terraform init
-  #       working-directory: terraform/
+      - name: Terraform Init apply
+        run: |
+          terraform init -backend-config="key=miranuiN8nSync/state/${ENV_NAME}/terraform.tfstate"
+        working-directory: terraform/
 
-  #     - run: terraform apply -auto-approve
-  #       working-directory: terraform/
+      - name: Terraform Format Check
+        run: terraform fmt -check
+        working-directory: terraform/
 
-  # ##############################################################################
-  # #                          terraform APPLY                                   #
-  # ##############################################################################
-  # clever-deploy:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v4
+      - name: Terraform Validate
+        run: terraform validate
+        working-directory: terraform/
 
-  #     - name: Install Clever Cloud CLI
-  #       run: |
-  #         npm install -g clever-tools
+      - name: Terraform Plan
+        run: terraform plan
+        working-directory: terraform/
 
-  #     - name: Login & deploy with Clever Tools
-  #       run: |
-  #         npx --yes clever-tools@latest login --token "$CLEVER_TOKEN" --secret "$CLEVER_SECRET"
-  #         npx --yes clever-tools@latest deploy --force
-  #       env:
-  #         CLEVER_TOKEN: ${{ secrets.TOKEN }}
-  #         CLEVER_SECRET: ${{ secrets.SECRET }}
-  #         FRONTEND_ORIGIN: ${{ secrets.FRONTEND_ORIGIN }}
+  analyse-terraform-plan:
+    runs-on: ubuntu-latest
+    needs: [terraform-plan]
+    environment: holder
+    steps:
+      - name: Checkout repository
+        run: echo "No code to checkout, but needed for action"
+
+  ##############################################################################
+  #                          terraform APPLY                                   #
+  ##############################################################################
+  terraform-apply:
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}
+    needs: [analyse-terraform-plan]
+    outputs:
+      docker_app_id: ${{ steps.tf-output.outputs.docker_app_id }}
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      TF_VAR_token: ${{ secrets.CLEVER_TOKEN }}
+      TF_VAR_secret: ${{ secrets.CLEVER_SECRET }}
+      TF_VAR_endpoint: ${{ secrets.CLEVER_ENDPOINT }}
+      TF_VAR_organisation: ${{ secrets.CLEVER_ORGANISATION }}
+
+      TF_VAR_n8n_owner_email: ${{ secrets.N8N_OWNER_EMAIL }}
+      TF_VAR_n8n_owner_password: ${{ secrets.N8N_OWNER_PASSWORD }}
+      TF_VAR_n8n_encryption_key: ${{ secrets.N8N_ENCRYPTION_KEY }}
+
+      TF_VAR_user_token: ${{ secrets.BOOND_USER_TOKEN }}
+      TF_VAR_client_token: ${{ secrets.BOUND_CLIENT_TOKEN }}
+      TF_VAR_client_key: ${{ secrets.BOOND_CLIENT_KEY }}
+
+      TF_VAR_miranui_key: ${{ secrets.MIRANUI_API_KEY }}
+      TF_VAR_miranui_token: ${{ secrets.MIRANUI_API_TOKEN }}
+
+      TF_VAR_env_name: ${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}
+      ENV_NAME: ${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.6
+
+      - name: Terraform Init apply
+        run: |
+          terraform init -backend-config="key=miranuiN8nSync/state/${ENV_NAME}/terraform.tfstate"
+        working-directory: terraform/
+
+      - run: terraform apply -auto-approve
+        working-directory: terraform/
+
+      - name: Read Terraform outputs and set step output
+        id: tf-output
+        run: |
+          DOCKER_ID=$(terraform output -raw docker_app_id)
+          echo "docker_app_id=$DOCKER_ID" >> $GITHUB_OUTPUT
+        working-directory: terraform
+
+  ##############################################################################
+  #                            CLEVER Deploy                                   #
+  ##############################################################################
+  clever-deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}
+    needs: [terraform-apply]
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      TF_VAR_token: ${{ secrets.CLEVER_TOKEN }}
+      TF_VAR_secret: ${{ secrets.CLEVER_SECRET }}
+      TF_VAR_endpoint: ${{ secrets.CLEVER_ENDPOINT }}
+      TF_VAR_organisation: ${{ secrets.CLEVER_ORGANISATION }}
+
+      TF_VAR_n8n_owner_email: ${{ secrets.N8N_OWNER_EMAIL }}
+      TF_VAR_n8n_owner_password: ${{ secrets.N8N_OWNER_PASSWORD }}
+      TF_VAR_n8n_encryption_key: ${{ secrets.N8N_ENCRYPTION_KEY }}
+
+      TF_VAR_user_token: ${{ secrets.BOOND_USER_TOKEN }}
+      TF_VAR_client_token: ${{ secrets.BOUND_CLIENT_TOKEN }}
+      TF_VAR_client_key: ${{ secrets.BOOND_CLIENT_KEY }}
+
+      TF_VAR_miranui_key: ${{ secrets.MIRANUI_API_KEY }}
+      TF_VAR_miranui_token: ${{ secrets.MIRANUI_API_TOKEN }}
+
+      TF_VAR_env_name: ${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}
+      ENV_NAME: ${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}
+      APP_ID: ${{ needs.terraform-apply.outputs.docker_app_id }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Use Node 22 (avoid EBADENGINE warnings)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Clever Cloud CLI
+        run: |
+          npm install -g clever-tools
+
+      - name: Login & deploy with Clever Tools
+        run: |
+          npx --yes clever-tools@latest login --token "$CLEVER_TOKEN" --secret "$CLEVER_SECRET"
+          npx --yes clever-tools@latest link $APP_ID
+          npx --yes clever-tools@latest domain add "$DOMAIN_NAME" --app $APP_ID || true
+          npx --yes clever-tools@latest deploy --force
+        env:
+          CLEVER_TOKEN: ${{ secrets.CLEVER_TOKEN }}
+          CLEVER_SECRET: ${{ secrets.CLEVER_SECRET }}
+          CLEVER_ORGANISATION: ${{ secrets.CLEVER_ORGANISATION }}
+          DOMAIN_NAME: ${{ github.ref == 'refs/heads/main' && 'miranui-n8n.cleverapps.io' || 'dev-miranui-n8n.cleverapps.io' }}
