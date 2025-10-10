@@ -3,12 +3,12 @@
   "nodes": [
     {
       "parameters": {
-        "jsCode": "const jwt = require('jsonwebtoken');\n\n// Récupérer la sortie brute du Execute Command node\n// (adapte le nom du node si nécessaire)\nconst rawEnv = $json[\"stdout\"];\n\n// Transformer en objet { KEY: VALUE }\nconst envVars = {};\nrawEnv.split('\\n').forEach(line => {\n  if (line.trim()) {\n    const [key, value] = line.split('=');\n    envVars[key] = value;\n  }\n});\n\n// Extraire les valeurs\nconst userToken = envVars.USER_TOKEN;\nconst clientToken = envVars.CLIENT_TOKEN;\nconst clientKey = envVars.CLIENT_KEY;\nconst mode = \"god\";\n\n// Générer l'en-tête\nconst header = {\n  alg: 'HS256',\n  typ: 'JWT',\n};\n\n// Générer le payload\nconst payload = {\n  userToken,\n  clientToken,\n  time: Math.floor(Date.now() / 1000),\n  mode,\n};\n\n// Signer le JWT\nconst token = jwt.sign(payload, clientKey, { algorithm: 'HS256', header });\n\n// Retourner le résultat\nreturn {\n  json: {\n    jwt: token\n  }\n};\n"
+        "jsCode": "const jwt = require('jsonwebtoken');\n\n// Récupérer la sortie brute du Execute Command node\n// (adapte le nom du node si nécessaire)\nconst rawEnv = $json[\"stdout\"];\n\n// Transformer en objet { KEY: VALUE }\nconst envVars = {};\nrawEnv.split('\\n').forEach(line => {\n  if (line.trim()) {\n    const [key, value] = line.split('=');\n    envVars[key] = value;\n  }\n});\n\n// Extraire les valeurs\nconst userToken = envVars.USER_TOKEN;\nconst clientToken = envVars.CLIENT_TOKEN;\nconst clientKey = envVars.CLIENT_KEY;\nconst n8n_key = envVars.N8N_KEY;\nconst n8n_secret = envVars.N8N_TOKEN;\n\nconst key = $('Webhook').first().json.headers[\"x-webhook-key\"] || '';\nconst secret = $('Webhook').first().json.headers[\"x-webhook-secret\"] || '';\n\nif (key !== n8n_key || secret !== n8n_secret) {\n  throw new Error('Unauthorized webhook: bad secrets');\n}\n\nconst mode = \"god\";\n\n// Générer l'en-tête\nconst header = {\n  alg: 'HS256',\n  typ: 'JWT',\n};\n\n// Générer le payload\nconst payload = {\n  userToken,\n  clientToken,\n  time: Math.floor(Date.now() / 1000),\n  mode,\n};\n\n// Signer le JWT\nconst token = jwt.sign(payload, clientKey, { algorithm: 'HS256', header });\n\n// Retourner le résultat\nreturn {\n  json: {\n    jwt: token\n  }\n};\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        320,
+        272,
         -64
       ],
       "id": "f0bd2116-f391-4ec8-bbb2-255d7643445f",
@@ -17,39 +17,16 @@
     },
     {
       "parameters": {
-        "command": "env | grep \"USER_TOKEN\"\nenv | grep \"CLIENT_TOKEN\"\nenv | grep \"CLIENT_KEY\"\n"
+        "command": "env | grep \"USER_TOKEN\"\nenv | grep \"CLIENT_TOKEN\"\nenv | grep \"CLIENT_KEY\"\nenv | grep \"N8N_KEY\"\nenv | grep \"N8N_TOKEN\"\n"
       },
       "type": "n8n-nodes-base.executeCommand",
       "typeVersion": 1,
       "position": [
-        112,
+        16,
         -64
       ],
       "id": "d067377b-1900-4404-906f-e0ebe5725706",
       "name": "Get tokens"
-    },
-    {
-      "parameters": {
-        "path": "cf806d22-8038-4160-8ab3-ecce4b783634",
-        "authentication": "basicAuth",
-        "responseMode": "lastNode",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2.1,
-      "position": [
-        -176,
-        -64
-      ],
-      "id": "d18e4a04-1c9a-4ef0-b0d0-b01e7f5bb08a",
-      "name": "Webhook",
-      "webhookId": "cf806d22-8038-4160-8ab3-ecce4b783634",
-      "credentials": {
-        "httpBasicAuth": {
-          "id": "PlYfwdOyNkLRbi7v",
-          "name": "Collab credential"
-        }
-      }
     },
     {
       "parameters": {
@@ -211,6 +188,24 @@
       ],
       "id": "7dfa5395-8649-497b-9ddb-3439aae54f28",
       "name": "Leads final"
+    },
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "9e66e4c5-cdd2-4261-8b1b-0f4b7885f453",
+        "responseMode": "lastNode",
+        "responseData": "allEntries",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -304,
+        -64
+      ],
+      "id": "8ed5fa2f-967d-4939-a232-5c2504975616",
+      "name": "Webhook",
+      "webhookId": "9e66e4c5-cdd2-4261-8b1b-0f4b7885f453"
     }
   ],
   "pinData": {},
@@ -231,17 +226,6 @@
         [
           {
             "node": "Calculate JWT token",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Webhook": {
-      "main": [
-        [
-          {
-            "node": "Get tokens",
             "type": "main",
             "index": 0
           }
@@ -350,13 +334,24 @@
       "main": [
         []
       ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Get tokens",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
-  "active": false,
+  "active": true,
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "30ef2044-9d46-4210-b861-69f8e03a58f4",
+  "versionId": "7f9b5267-e3a4-498a-99cf-2bda16a4faaf",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "1c7cd5329ba0f9c84a52f1a560eaf026638d92ca0190407f86d1b4e8f5e948c2"

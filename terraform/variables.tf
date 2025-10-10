@@ -56,7 +56,19 @@ variable "client_token" {
   sensitive   = true
 }
 
-variable "env" {
-  description = "prod or dev"
+variable "miranui_key" {
+  description = "Miranui API client key"
+  type        = string
+  sensitive   = true
+}
+
+variable "miranui_token" {
+  description = "Miranui API client token"
+  type        = string
+  sensitive   = true
+}
+
+variable "env_name" {
+  description = "Environment name (dev, prod, ...)"
   type        = string
 }
