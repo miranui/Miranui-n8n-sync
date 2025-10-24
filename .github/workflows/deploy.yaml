@@ -42,7 +42,7 @@ jobs:
       TF_VAR_n8n_encryption_key: ${{ secrets.N8N_ENCRYPTION_KEY }}
 
       TF_VAR_user_token: ${{ secrets.BOOND_USER_TOKEN }}
-      TF_VAR_client_token: ${{ secrets.BOUND_CLIENT_TOKEN }}
+      TF_VAR_client_token: ${{ secrets.BOOND_CLIENT_TOKEN }}
       TF_VAR_client_key: ${{ secrets.BOOND_CLIENT_KEY }}
 
       TF_VAR_miranui_key: ${{ secrets.MIRANUI_API_KEY }}
@@ -108,7 +108,7 @@ jobs:
       TF_VAR_n8n_encryption_key: ${{ secrets.N8N_ENCRYPTION_KEY }}
 
       TF_VAR_user_token: ${{ secrets.BOOND_USER_TOKEN }}
-      TF_VAR_client_token: ${{ secrets.BOUND_CLIENT_TOKEN }}
+      TF_VAR_client_token: ${{ secrets.BOOND_CLIENT_TOKEN }}
       TF_VAR_client_key: ${{ secrets.BOOND_CLIENT_KEY }}
 
       TF_VAR_miranui_key: ${{ secrets.MIRANUI_API_KEY }}
@@ -162,7 +162,7 @@ jobs:
       TF_VAR_n8n_encryption_key: ${{ secrets.N8N_ENCRYPTION_KEY }}
 
       TF_VAR_user_token: ${{ secrets.BOOND_USER_TOKEN }}
-      TF_VAR_client_token: ${{ secrets.BOUND_CLIENT_TOKEN }}
+      TF_VAR_client_token: ${{ secrets.BOOND_CLIENT_TOKEN }}
       TF_VAR_client_key: ${{ secrets.BOOND_CLIENT_KEY }}
 
       TF_VAR_miranui_key: ${{ secrets.MIRANUI_API_KEY }}
