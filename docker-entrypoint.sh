@@ -13,12 +13,44 @@ until curl -sf "${WEBHOOK_URL}healthz/readiness" > /dev/null; do
   sleep 2
 done
 
-# Create owner (idempotent: if already exists, endpoint returns 200/409 or similar)
-echo "[init] creating owner (idempotent)..."
-curl -sf -X POST "${WEBHOOK_URL}rest/owner/setup" \
+# Envoi de la requête et capture du code HTTP + réponse
+response=$(curl -s -X POST "${WEBHOOK_URL}rest/owner/setup" \
   -H "Content-Type: application/json" \
   -d "{\"email\":\"$OWNER_EMAIL\",\"password\":\"$OWNER_PASSWORD\",\"firstName\":\"${N8N_OWNER_FIRSTNAME:-Admin}\",\"lastName\":\"${N8N_OWNER_LASTNAME:-User}\"}" \
-  || echo "[init] owner already exists or creation skipped"
+  -w "\n%{http_code}")
+
+# Séparation du corps et du code HTTP
+http_body=$(echo "$response" | sed '$d')
+http_code=$(echo "$response" | tail -n1)
+
+echo "------ n8n owner setup ------"
+echo "HTTP status: $http_code"
+
+case "$http_code" in
+  200|201)
+    echo "[✅] Owner created successfully."
+    echo "Response:"
+    echo "$http_body"
+    ;;
+  409)
+    echo "[ℹ️] Owner already exists."
+    echo "Response:"
+    echo "$http_body"
+    ;;
+  400|401|403)
+    echo "[⚠️] Authentication or validation error."
+    echo "Response:"
+    echo "$http_body"
+    ;;
+  *)
+    echo "[❌] Unexpected error (HTTP $http_code)."
+    echo "Response:"
+    echo "$http_body"
+    ;;
+esac
+
+echo "------------------------------"
+
 
 n8n import:workflow --separate --input=/files/insidequest
 n8n import:workflow --separate --input=/files/synchro-miranui
