@@ -4,10 +4,6 @@ set -euo pipefail
 # Start n8n in background to run migrations + expose health endpoints
 echo "[init] starting n8n in background for setup..."
 
-echo "[tmp] N8N_ENCRYPTION_KEY=${WEBHOOK_URL:-undefined}"
-echo "[tmp] N8N_ENCRYPTION_KEY=${OWNER_EMAIL:-undefined}"
-echo "[tmp] N8N_ENCRYPTION_KEY=${OWNER_PASSWORD:-undefined}"
-
 echo "${WEBHOOK_URL}rest/owner/setup"
 n8n start &
 
