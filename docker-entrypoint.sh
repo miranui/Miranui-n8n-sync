@@ -15,7 +15,6 @@ done
 
 echo "[init] instance is ready. Proceeding with owner setup..."
 
-
 # Envoi de la requête et capture du code HTTP + réponse
 response=$(curl -s -X POST "${WEBHOOK_URL}rest/owner/setup" \
   -H "Content-Type: application/json" \
