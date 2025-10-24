@@ -58,8 +58,8 @@ resource "clevercloud_docker" "docker_instance" {
     "N8N_USER_MANAGEMENT_DISABLED" = "false"
     "N8N_PROTOCOL"                 = "https"
     "WEBHOOK_URL" = format(
-      "https://%s-miranui-n8n.cleverapps.io/",
-      var.env_name == "dev" ? "dev" : ""
+      "https://%smiranui-n8n.cleverapps.io/",
+      var.env_name == "dev" ? "dev-" : ""
     )
     "OWNER_EMAIL"    = var.n8n_owner_email
     "OWNER_PASSWORD" = var.n8n_owner_password
