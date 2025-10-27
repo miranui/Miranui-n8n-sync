@@ -95,7 +95,6 @@
     },
     {
       "parameters": {
-        "httpMethod": "GET",
         "path": "e0a47c03-7c91-4206-81e7-8a09c8f03daa",
         "responseMode": "lastNode",
         "responseData": "allEntries",
@@ -126,7 +125,7 @@
     },
     {
       "parameters": {
-        "url": "=https://ui.boondmanager.com/api/contacts?startDate=2025-09-01&origins=2&maxResults=500",
+        "url": "=https://ui.boondmanager.com/api/contacts?startDate=2025-10-14&maxResults=500&period=created&origins=2",
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
@@ -423,10 +422,10 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "4c05312f-adb1-4df3-9203-597756d06966",
+  "versionId": "39845dab-8eda-434c-8e20-cf9ba807c85d",
   "meta": {
     "templateCredsSetupCompleted": true,
-    "instanceId": "1c7cd5329ba0f9c84a52f1a560eaf026638d92ca0190407f86d1b4e8f5e948c2"
+    "instanceId": "f8d193820d3f5c29f0c4bcc168b977dee8177d9bb45616cfbe46be93767f66f0"
   },
   "id": "bYtpQ6g33oWA5ouT",
   "tags": []
