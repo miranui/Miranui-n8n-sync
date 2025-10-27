@@ -30,7 +30,7 @@
     },
     {
       "parameters": {
-        "url": "=https://ui.boondmanager.com/api/opportunities?maxResults=500&opportunityStates=8,10,6,13,14,2,3,12,11,1&origins=2",
+        "url": "=https://ui.boondmanager.com/api/opportunities?maxResults=500&opportunityStates=8,10,6,13,14,2,3,12,11,1&origins=2&period=created",
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
@@ -191,7 +191,6 @@
     },
     {
       "parameters": {
-        "httpMethod": "GET",
         "path": "9e66e4c5-cdd2-4261-8b1b-0f4b7885f453",
         "responseMode": "lastNode",
         "responseData": "allEntries",
@@ -351,10 +350,10 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "7f9b5267-e3a4-498a-99cf-2bda16a4faaf",
+  "versionId": "d5c3ddbb-0c8b-4209-a4fa-f5997d23b308",
   "meta": {
     "templateCredsSetupCompleted": true,
-    "instanceId": "1c7cd5329ba0f9c84a52f1a560eaf026638d92ca0190407f86d1b4e8f5e948c2"
+    "instanceId": "f8d193820d3f5c29f0c4bcc168b977dee8177d9bb45616cfbe46be93767f66f0"
   },
   "id": "ZHrjOKymolH50yfZ",
   "tags": []
