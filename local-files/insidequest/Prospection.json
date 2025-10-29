@@ -1,5 +1,5 @@
 {
-  "name": "Prospection",
+  "name": "BoondManager - Prospection - Challenge commercial",
   "nodes": [
     {
       "parameters": {
@@ -95,7 +95,7 @@
     },
     {
       "parameters": {
-        "path": "e0a47c03-7c91-4206-81e7-8a09c8f03daa",
+        "path": "challenge-commercial/prospection",
         "responseMode": "lastNode",
         "responseData": "allEntries",
         "options": {}
@@ -422,7 +422,7 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "39845dab-8eda-434c-8e20-cf9ba807c85d",
+  "versionId": "0e7ec7af-313d-4779-8d4d-19c5477da754",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "f8d193820d3f5c29f0c4bcc168b977dee8177d9bb45616cfbe46be93767f66f0"

@@ -1,5 +1,5 @@
 {
-  "name": "Leads",
+  "name": "BoondManager - Leads - Challenge commercial",
   "nodes": [
     {
       "parameters": {
@@ -30,7 +30,7 @@
     },
     {
       "parameters": {
-        "url": "=https://ui.boondmanager.com/api/opportunities?maxResults=500&opportunityStates=8,10,6,13,14,2,3,12,11,1&origins=2&period=created",
+        "url": "=https://ui.boondmanager.com/api/opportunities?maxResults=500&opportunityStates=8,10,6,13,14,2,3,12,11,1&origins=2&period=created&startDate=2025-10-14",
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
@@ -191,7 +191,7 @@
     },
     {
       "parameters": {
-        "path": "9e66e4c5-cdd2-4261-8b1b-0f4b7885f453",
+        "path": "challenge-commercial/leads",
         "responseMode": "lastNode",
         "responseData": "allEntries",
         "options": {}
@@ -350,7 +350,7 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "d5c3ddbb-0c8b-4209-a4fa-f5997d23b308",
+  "versionId": "3e056765-f4b4-4592-83ba-f39ab782aa92",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "f8d193820d3f5c29f0c4bcc168b977dee8177d9bb45616cfbe46be93767f66f0"
