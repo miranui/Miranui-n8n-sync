@@ -43,7 +43,7 @@
       "type": "n8n-nodes-base.splitOut",
       "typeVersion": 1,
       "position": [
-        1568,
+        1904,
         176
       ],
       "id": "6a10d534-1e9a-4558-909e-8646427d7855",
@@ -87,8 +87,8 @@
       "type": "n8n-nodes-base.filter",
       "typeVersion": 2.2,
       "position": [
-        1344,
-        -64
+        1600,
+        176
       ],
       "id": "420f1a2c-9859-43c8-96fd-03f073377372",
       "name": "Filter"
@@ -304,16 +304,6 @@
             "node": "Split Out1",
             "type": "main",
             "index": 0
-          },
-          {
-            "node": "GET contacts actions",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Merge",
-            "type": "main",
-            "index": 1
           }
         ]
       ]
@@ -358,6 +348,16 @@
             "node": "Filter",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "GET contacts actions",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
           }
         ]
       ]
@@ -422,7 +422,7 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "0e7ec7af-313d-4779-8d4d-19c5477da754",
+  "versionId": "f6dad252-1099-4bd4-9d89-dfc8476deb64",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "f8d193820d3f5c29f0c4bcc168b977dee8177d9bb45616cfbe46be93767f66f0"
