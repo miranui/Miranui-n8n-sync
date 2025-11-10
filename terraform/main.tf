@@ -73,9 +73,11 @@ resource "clevercloud_docker" "docker_instance" {
     "NODE_FUNCTION_ALLOW_EXTERNAL"          = "*"
     "NODE_FUNCTION_ALLOW_BUILTIN"           = "*"
     "N8N_TRUST_PROXY"                       = "true"
+    "N8N_PROXY_HOPS"                        = "1"
     "N8N_RUNNERS_ENABLED"                   = "true"
     "N8N_BLOCK_ENV_ACCESS_IN_NODE"          = "false"
     "N8N_GIT_NODE_DISABLE_BARE_REPOS"       = "true"
+    "WORKFLOWS_TO_ACTIVATE"                 = var.workflows_to_activate
 
     # n8n secrets
     "USER_TOKEN"   = var.user_token

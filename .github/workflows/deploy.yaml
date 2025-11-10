@@ -40,6 +40,7 @@ jobs:
       TF_VAR_n8n_owner_email: ${{ secrets.N8N_OWNER_EMAIL }}
       TF_VAR_n8n_owner_password: ${{ secrets.N8N_OWNER_PASSWORD }}
       TF_VAR_n8n_encryption_key: ${{ secrets.N8N_ENCRYPTION_KEY }}
+      TF_VAR_workflows_to_activate: ${{ vars.WORKFLOWS_TO_ACTIVATE }}
 
       TF_VAR_user_token: ${{ secrets.BOOND_USER_TOKEN }}
       TF_VAR_client_token: ${{ secrets.BOOND_CLIENT_TOKEN }}
@@ -106,6 +107,7 @@ jobs:
       TF_VAR_n8n_owner_email: ${{ secrets.N8N_OWNER_EMAIL }}
       TF_VAR_n8n_owner_password: ${{ secrets.N8N_OWNER_PASSWORD }}
       TF_VAR_n8n_encryption_key: ${{ secrets.N8N_ENCRYPTION_KEY }}
+      TF_VAR_workflows_to_activate: ${{ vars.WORKFLOWS_TO_ACTIVATE }}
 
       TF_VAR_user_token: ${{ secrets.BOOND_USER_TOKEN }}
       TF_VAR_client_token: ${{ secrets.BOOND_CLIENT_TOKEN }}
@@ -160,6 +162,7 @@ jobs:
       TF_VAR_n8n_owner_email: ${{ secrets.N8N_OWNER_EMAIL }}
       TF_VAR_n8n_owner_password: ${{ secrets.N8N_OWNER_PASSWORD }}
       TF_VAR_n8n_encryption_key: ${{ secrets.N8N_ENCRYPTION_KEY }}
+      TF_VAR_workflows_to_activate: ${{ vars.WORKFLOWS_TO_ACTIVATE }}
 
       TF_VAR_user_token: ${{ secrets.BOOND_USER_TOKEN }}
       TF_VAR_client_token: ${{ secrets.BOOND_CLIENT_TOKEN }}
