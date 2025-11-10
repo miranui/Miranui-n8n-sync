@@ -250,7 +250,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Function node - fusionne Contacts dans Prospection\n\n// Récupère toutes les sous-structures présentes dans items\nconst allPros = [];\nconst allContacts = [];\n\nfor (const it of items) {\n  const j = it.json || {};\n  if (j.Prospection && typeof j.Prospection === 'object') {\n    // si plusieurs Prospection, on concatène leurs tableaux internes si présents\n    const p = j.Prospection;\n    if (Array.isArray(p.Pitchs)) allPros.push(...p.Pitchs);\n    if (Array.isArray(p.PitchsOrganises)) allPros.push({ __organises: true, data: p.PitchsOrganises });\n    // on garde aussi l'objet entier au cas où (non nécessaire ici)\n  }\n  if (Array.isArray(j.Contacts)) {\n    allContacts.push(...j.Contacts);\n  }\n}\n\n// Reconstruire Pitchs et PitchsOrganises proprement\n// On a poussé les Pitchs directement et les PitchsOrganises encapsulés si présents\nconst Pitchs = [];\nconst PitchsOrganises = [];\n\nfor (const entry of allPros) {\n  if (entry && entry.__organises) {\n    // entry.data est un array\n    for (const e of entry.data) {\n      PitchsOrganises.push(e);\n    }\n  } else if (entry) {\n    Pitchs.push(entry);\n  }\n}\n\n// Si aucun Prospection trouvé, on peut initialiser vide\n// Contacts : tout ce qu'on a collecté\nconst Contacts = allContacts;\n\n// Retourne un seul item avec Prospection contenant Pitchs, PitchsOrganises et Contacts\nreturn [\n  {\n    json: {\n      Prospection: {\n        Contacts,\n        Pitchs,\n        PitchsOrganises\n      }\n    }\n  }\n];\n"
+        "jsCode": "// Function node - fusionne Contacts dans Prospection\n\n// Récupère toutes les sous-structures présentes dans items\nconst allPros = [];\nconst allContacts = [];\n\nfor (const it of items) {\n  const j = it.json || {};\n  if (j.Prospection && typeof j.Prospection === 'object') {\n    // si plusieurs Prospection, on concatène leurs tableaux internes si présents\n    const p = j.Prospection;\n    if (Array.isArray(p.Pitchs)) allPros.push(...p.Pitchs);\n    if (Array.isArray(p.PitchsOrganises)) allPros.push({ __organises: true, data: p.PitchsOrganises });\n    // on garde aussi l'objet entier au cas où (non nécessaire ici)\n  }\n  if (Array.isArray(j.Contacts)) {\n    allContacts.push(...j.Contacts);\n  }\n}\n\n// Reconstruire Pitchs et PitchsOrganises proprement\n// On a poussé les Pitchs directement et les PitchsOrganises encapsulés si présents\nconst Pitchs = [];\nconst PitchsOrganises = [];\n\nfor (const entry of allPros) {\n  if (entry && entry.__organises) {\n    // entry.data est un array\n    for (const e of entry.data) {\n      PitchsOrganises.push(e);\n    }\n  } else if (entry) {\n    Pitchs.push(entry);\n  }\n}\n\n// Si aucun Prospection trouvé, on peut initialiser vide\n// Contacts : tout ce qu'on a collecté\nconst Contacts = allContacts;\n\n// Retourne un seul item avec Prospection contenant Pitchs, PitchsOrganises et Contacts\nreturn [\n  {\n    json: {\n      Contacts,\n      Pitchs,\n      PitchsOrganises\n    }\n  }\n];\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -422,7 +422,7 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "f6dad252-1099-4bd4-9d89-dfc8476deb64",
+  "versionId": "e23b1fdc-e92a-4441-b058-3919740ad568",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "f8d193820d3f5c29f0c4bcc168b977dee8177d9bb45616cfbe46be93767f66f0"
