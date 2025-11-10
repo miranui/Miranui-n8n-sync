@@ -38,6 +38,11 @@ variable "n8n_encryption_key" {
   sensitive   = true
 }
 
+variable "workflows_to_activate" {
+  description = "Comma separated list of workflow IDs to activate"
+  type        = string
+}
+
 variable "user_token" {
   description = "Miranui API user token"
   type        = string
